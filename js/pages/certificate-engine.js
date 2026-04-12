@@ -103,7 +103,7 @@
             // Give React a moment to mount the DOM
             setTimeout(async () => {
                 await document.fonts.ready;
-                await new Promise(r => setTimeout(r, 300)); // Safety margin for browser painting
+                await new Promise(r => setTimeout(r, 800)); // Safety margin for browser painting
                 
                 const targetNode = container.querySelector('[id^="cert-"]') || container;
                 try {
@@ -229,8 +229,9 @@
     // ================================================================
     Luminova.Components.CertificateCard = ({ certificate, lang }) => {
         lang = lang || 'ar';
-        // GitHub Pages compatible URL — splits on ? so it works on any host
-        const verifyUrl = window.location.origin + window.location.pathname + "?verify=" + certificate.id;
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('verify', certificate.id);
+        const verifyUrl = currentUrl.toString();
         const isDoctor  = certificate.senderRole === 'doctor';
 
         const studentName = lang === 'ar' ? certificate.studentName : (certificate.studentNameEn || certificate.studentName);
@@ -254,89 +255,84 @@
                     <div style=${{ width: '1000px', margin: '0 auto' }}>
                         <div
                             id=${'cert-' + certificate.id}
-                            className="bg-[#fdfbf7] border-[20px] border-slate-950"
+                            className="relative w-full max-w-4xl mx-auto bg-gradient-to-br from-[#fffdfa] to-[#f4f1e6] p-2 shadow-2xl overflow-hidden aspect-[1.414]"
                             style=${{
-                                position: 'relative',
                                 width: '1000px',
                                 height: '707px',
-                                overflow: 'hidden',
                                 fontFamily: "'Cairo', serif",
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexDirection: 'column',
                                 boxSizing: 'border-box'
                             }}>
 
-                            <!-- Decorative inner frame -->
-                            <div className="absolute inset-3 border-4 border-yellow-600 outline outline-2 outline-offset-4 outline-yellow-400 opacity-90 pointer-events-none z-10"></div>
+                            <!-- The Heavy Frame -->
+                            <div className="border-[12px] border-double border-slate-900 ring-4 ring-inset ring-yellow-600/80 p-8 h-full relative">
 
-                            <!-- Watermark -->
-                            <div className="absolute inset-0 flex items-center justify-center opacity-5 scale-150 grayscale pointer-events-none z-0">
-                                <span style=${{ fontSize: '180px', fontWeight: 900, transform: 'rotate(-15deg)', whiteSpace: 'nowrap' }}>LUMINOVA</span>
-                            </div>
+                                <!-- Watermark -->
+                                <div className="absolute inset-0 flex items-center justify-center opacity-5 scale-150 grayscale pointer-events-none z-0">
+                                    <span style=${{ fontSize: '180px', fontWeight: 900, transform: 'rotate(-15deg)', whiteSpace: 'nowrap', letterSpacing: 'normal' }}>LUMINOVA</span>
+                                </div>
 
-                            <!-- Content -->
-                            <div className="relative z-20 flex flex-col items-center justify-center text-center w-full px-20">
+                                <!-- Content -->
+                                <div className="relative z-20 flex flex-col items-center justify-center text-center w-full h-full px-12">
 
-                                <!-- Header -->
-                                <div className="absolute top-[60px] flex flex-col items-center w-full">
-                                    <div style=${{ fontSize: '13px', fontWeight: 900, color: '#b8860b', textTransform: 'uppercase' }}>✦ LUMINOVA EDU ✦</div>
-                                    <div className="text-4xl font-black text-slate-900 mt-4 border-b-4 border-yellow-500 pb-2 inline-block">
-                                        ${certTitle}
+                                    <!-- Header -->
+                                    <div className="absolute top-[20px] flex flex-col items-center w-full">
+                                        <div style=${{ fontSize: '13px', fontWeight: 900, color: '#b8860b', textTransform: 'uppercase', letterSpacing: 'normal' }}>✦ LUMINOVA EDU ✦</div>
+                                        <div className="text-4xl font-black text-slate-900 mt-4 border-b-4 border-yellow-500 pb-2 inline-block" style=${{ letterSpacing: 'normal' }}>
+                                            ${certTitle}
+                                        </div>
                                     </div>
-                                </div>
 
-                                <!-- Body -->
-                                <div className="flex flex-col items-center mt-[180px]">
-                                    <p className="text-xl font-bold text-slate-500 mb-6">
-                                        ${lang === 'ar' ? 'تشهد منصة لومينوفا التعليمية بأن' : 'Luminova Edu Platform certifies that'}
-                                    </p>
-                                    <div className="text-5xl font-black text-slate-900 mb-8 border-b-2 border-slate-200 pb-4">
-                                        ${studentName}
+                                    <!-- Body -->
+                                    <div className="flex flex-col items-center mt-[40px]">
+                                        <p className="text-xl font-bold text-slate-500 mb-6" style=${{ letterSpacing: 'normal' }}>
+                                            ${lang === 'ar' ? 'تشهد منصة لومينوفا التعليمية بأن' : 'Luminova Edu Platform certifies that'}
+                                        </p>
+                                        <div className="text-5xl font-black text-slate-900 mb-8 border-b-2 border-slate-200 pb-4" style=${{ letterSpacing: 'normal' }}>
+                                            ${studentName}
+                                        </div>
+                                        <p className="text-2xl font-bold text-slate-700 max-w-3xl leading-relaxed" style=${{ letterSpacing: 'normal' }}>
+                                            ${certDesc}
+                                        </p>
                                     </div>
-                                    <p className="text-2xl font-bold text-slate-700 max-w-3xl leading-relaxed">
-                                        ${certDesc}
-                                    </p>
+
                                 </div>
 
-                            </div>
-
-                            <!-- QR Code: absolute bottom-left -->
-                            <div className="absolute bottom-[40px] left-[60px] flex flex-col items-center z-30">
-                                <div className="w-24 h-24 bg-white p-1.5 border-4 border-slate-900 shadow-lg">
-                                    ${generateQRCodeSVG(verifyUrl)}
-                                </div>
-                                <span className="text-xs font-black text-slate-500 mt-2 font-mono bg-white px-3 py-0.5 rounded-full border border-slate-200">
-                                    ID: ${certificate.id}
-                                </span>
-                            </div>
-
-                            <!-- Signature: absolute bottom-center -->
-                            <div className="absolute bottom-[40px] left-1/2 -translate-x-1/2 flex flex-col items-center z-30">
-                                <div className="text-2xl font-black text-slate-900 border-b-2 border-yellow-500 pb-2 px-8 mb-2 whitespace-nowrap">
-                                    ${senderName}
-                                </div>
-                                <div className="text-sm font-bold text-slate-500 uppercase whitespace-nowrap">
-                                    ${isDoctor ? (lang === 'ar' ? 'دكتور المادة' : 'Professor') : (lang === 'ar' ? 'مسؤول المنصة' : 'Platform Moderator')}
-                                </div>
-                            </div>
-
-                            <!-- Role Seal: absolute bottom-right -->
-                            <div className="absolute bottom-[40px] right-[60px] z-30 w-28 h-28 rounded-full flex items-center justify-center flex-col -rotate-12 shadow-2xl"
-                                 style=${{
-                                    border: '4px solid ' + (isDoctor ? '#fde68a' : '#cbd5e1'),
-                                    background: isDoctor ? 'linear-gradient(135deg,#fde68a,#f59e0b,#d97706)' : 'linear-gradient(135deg,#e2e8f0,#94a3b8,#64748b)'
-                                 }}>
-                                <div className="w-24 h-24 rounded-full flex flex-col items-center justify-center"
-                                     style=${{ border: '2px dashed ' + (isDoctor ? '#fef9c3' : '#e2e8f0') }}>
-                                    <span className="text-3xl leading-none">🏅</span>
-                                    <span className="text-[10px] font-black mt-1 text-center uppercase" style=${{ color: isDoctor ? '#fff' : '#1e293b' }}>
-                                        ${isDoctor ? 'Official' : 'Peer'}
+                                <!-- QR Code: absolute bottom-left -->
+                                <div className="absolute bottom-[20px] left-[40px] flex flex-col items-center z-30">
+                                    <div className="w-24 h-24 bg-white p-1.5 border-4 border-slate-900 shadow-lg">
+                                        ${generateQRCodeSVG(verifyUrl)}
+                                    </div>
+                                    <span className="text-xs font-black text-slate-500 mt-2 font-mono bg-white px-3 py-0.5 rounded-full border border-slate-200">
+                                        ID: ${certificate.id}
                                     </span>
                                 </div>
-                            </div>
 
+                                <!-- Signature: absolute bottom-center -->
+                                <div className="absolute bottom-[20px] left-1/2 -translate-x-1/2 flex flex-col items-center z-30">
+                                    <div className="text-2xl font-black text-slate-900 border-b-2 border-yellow-500 pb-2 px-8 mb-2 whitespace-nowrap" style=${{ letterSpacing: 'normal' }}>
+                                        ${senderName}
+                                    </div>
+                                    <div className="text-sm font-bold text-slate-500 uppercase whitespace-nowrap" style=${{ letterSpacing: 'normal' }}>
+                                        ${isDoctor ? (lang === 'ar' ? 'دكتور المادة' : 'Professor') : (lang === 'ar' ? 'مسؤول المنصة' : 'Platform Moderator')}
+                                    </div>
+                                </div>
+
+                                <!-- Role Seal: absolute bottom-right -->
+                                <div className="absolute bottom-[20px] right-[40px] z-30 w-28 h-28 rounded-full flex items-center justify-center flex-col -rotate-12 shadow-2xl"
+                                     style=${{
+                                        border: '4px solid ' + (isDoctor ? '#fde68a' : '#cbd5e1'),
+                                        background: isDoctor ? 'linear-gradient(135deg,#fde68a,#f59e0b,#d97706)' : 'linear-gradient(135deg,#e2e8f0,#94a3b8,#64748b)'
+                                     }}>
+                                    <div className="w-24 h-24 rounded-full flex flex-col items-center justify-center"
+                                         style=${{ border: '2px dashed ' + (isDoctor ? '#fef9c3' : '#e2e8f0') }}>
+                                        <span className="text-3xl leading-none">🏅</span>
+                                        <span className="text-[10px] font-black mt-1 text-center uppercase" style=${{ color: isDoctor ? '#fff' : '#1e293b', letterSpacing: 'normal' }}>
+                                            ${isDoctor ? 'Official' : 'Peer'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                            </div>
                         </div>
                     </div>
                 </div>
