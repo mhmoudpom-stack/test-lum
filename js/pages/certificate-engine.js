@@ -82,6 +82,7 @@
         const html2c = await loadHtml2Canvas();
 
         const container = document.createElement('div');
+        container.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
         Object.assign(container.style, {
             position: 'absolute',
             left: '-9999px',
@@ -229,7 +230,7 @@
     Luminova.Components.CertificateCard = ({ certificate, lang }) => {
         lang = lang || 'ar';
         // GitHub Pages compatible URL — splits on ? so it works on any host
-        const verifyUrl = window.location.href.split('?')[0] + '?verify=' + certificate.id;
+        const verifyUrl = window.location.origin + window.location.pathname + "?verify=" + certificate.id;
         const isDoctor  = certificate.senderRole === 'doctor';
 
         const studentName = lang === 'ar' ? certificate.studentName : (certificate.studentNameEn || certificate.studentName);
@@ -253,48 +254,48 @@
                     <div style=${{ width: '1000px', margin: '0 auto' }}>
                         <div
                             id=${'cert-' + certificate.id}
+                            className="bg-[#fdfbf7] border-[20px] border-slate-950"
                             style=${{
                                 position: 'relative',
                                 width: '1000px',
                                 height: '707px',
-                                background: '#ffffff',
                                 overflow: 'hidden',
                                 fontFamily: "'Cairo', serif",
-                                border: '1px solid #e2e8f0',
-                                boxShadow: '0 24px 60px -10px rgba(0,0,0,0.18)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                flexDirection: 'column'
+                                flexDirection: 'column',
+                                boxSizing: 'border-box'
                             }}>
 
-                            <!-- Decorative frame borders -->
-                            <div style=${{ position: 'absolute', inset: '32px', border: '6px double #1e293b', opacity: 0.9, pointerEvents: 'none', zIndex: 10, borderRadius: '2px' }}></div>
-                            <div style=${{ position: 'absolute', inset: '42px', border: '1px solid #d4af37', opacity: 0.8, pointerEvents: 'none', zIndex: 10, borderRadius: '2px' }}></div>
+                            <!-- Decorative inner frame -->
+                            <div className="absolute inset-3 border-4 border-yellow-600 outline outline-2 outline-offset-4 outline-yellow-400 opacity-90 pointer-events-none z-10"></div>
 
                             <!-- Watermark -->
-                            <div style=${{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-                                <span style=${{ fontSize: '220px', fontWeight: 900, color: '#0f172a', opacity: 0.04, transform: 'rotate(-15deg)', letterSpacing: '-0.06em', whiteSpace: 'nowrap' }}>LUMINOVA</span>
+                            <div className="absolute inset-0 flex items-center justify-center opacity-5 scale-150 grayscale pointer-events-none z-0">
+                                <span style=${{ fontSize: '180px', fontWeight: 900, transform: 'rotate(-15deg)', whiteSpace: 'nowrap' }}>LUMINOVA</span>
                             </div>
 
                             <!-- Content -->
-                            <div style=${{ position: 'relative', zIndex: 20, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 80px' }}>
+                            <div className="relative z-20 flex flex-col items-center justify-center text-center w-full px-20">
 
                                 <!-- Header -->
-                                <div style=${{ position: 'absolute', top: '60px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <div style=${{ fontSize: '13px', fontWeight: 900, color: '#b8860b', letterSpacing: '0.3em', textTransform: 'uppercase' }}>✦ LUMINOVA  EDU ✦</div>
-                                    <div style=${{ fontSize: '34px', fontWeight: 900, color: '#1e293b', marginTop: '8px', whiteSpace: 'nowrap' }}>${certTitle}</div>
+                                <div className="absolute top-[60px] flex flex-col items-center w-full">
+                                    <div style=${{ fontSize: '13px', fontWeight: 900, color: '#b8860b', textTransform: 'uppercase' }}>✦ LUMINOVA EDU ✦</div>
+                                    <div className="text-4xl font-black text-slate-900 mt-4 border-b-4 border-yellow-500 pb-2 inline-block">
+                                        ${certTitle}
+                                    </div>
                                 </div>
 
                                 <!-- Body -->
-                                <div style=${{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '24px' }}>
-                                    <p style=${{ fontSize: '16px', fontWeight: 600, color: '#64748b', marginBottom: '14px', whiteSpace: 'nowrap' }}>
+                                <div className="flex flex-col items-center mt-[180px]">
+                                    <p className="text-xl font-bold text-slate-500 mb-6">
                                         ${lang === 'ar' ? 'تشهد منصة لومينوفا التعليمية بأن' : 'Luminova Edu Platform certifies that'}
                                     </p>
-                                    <div style=${{ fontSize: '60px', fontWeight: 900, color: '#0f172a', whiteSpace: 'nowrap', borderBottom: '3px solid #e2e8f0', paddingBottom: '14px', marginBottom: '16px', lineHeight: 1.15 }}>
+                                    <div className="text-5xl font-black text-slate-900 mb-8 border-b-2 border-slate-200 pb-4">
                                         ${studentName}
                                     </div>
-                                    <p style=${{ fontSize: '20px', fontWeight: 700, color: '#475569', maxWidth: '680px', lineHeight: 1.65 }}>
+                                    <p className="text-2xl font-bold text-slate-700 max-w-3xl leading-relaxed">
                                         ${certDesc}
                                     </p>
                                 </div>
@@ -302,43 +303,36 @@
                             </div>
 
                             <!-- QR Code: absolute bottom-left -->
-                            <div style=${{ position: 'absolute', bottom: '52px', left: '64px', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 30 }}>
-                                <div style=${{ width: '90px', height: '90px', background: '#fff', padding: '6px', border: '3px solid #1e293b', boxShadow: '2px 2px 8px rgba(0,0,0,0.12)' }}>
+                            <div className="absolute bottom-[40px] left-[60px] flex flex-col items-center z-30">
+                                <div className="w-24 h-24 bg-white p-1.5 border-4 border-slate-900 shadow-lg">
                                     ${generateQRCodeSVG(verifyUrl)}
                                 </div>
-                                <span style=${{ fontSize: '10px', fontWeight: 800, color: '#94a3b8', marginTop: '6px', fontFamily: 'monospace', background: '#fff', padding: '2px 8px', borderRadius: '999px', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                                <span className="text-xs font-black text-slate-500 mt-2 font-mono bg-white px-3 py-0.5 rounded-full border border-slate-200">
                                     ID: ${certificate.id}
                                 </span>
                             </div>
 
                             <!-- Signature: absolute bottom-center -->
-                            <div style=${{ position: 'absolute', bottom: '52px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 30 }}>
-                                <div style=${{ fontSize: '22px', fontWeight: 900, color: '#1e293b', borderBottom: '2px solid #334155', paddingBottom: '8px', paddingLeft: '32px', paddingRight: '32px', marginBottom: '8px', whiteSpace: 'nowrap' }}>
+                            <div className="absolute bottom-[40px] left-1/2 -translate-x-1/2 flex flex-col items-center z-30">
+                                <div className="text-2xl font-black text-slate-900 border-b-2 border-yellow-500 pb-2 px-8 mb-2 whitespace-nowrap">
                                     ${senderName}
                                 </div>
-                                <div style=${{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.18em', whiteSpace: 'nowrap' }}>
+                                <div className="text-sm font-bold text-slate-500 uppercase whitespace-nowrap">
                                     ${isDoctor ? (lang === 'ar' ? 'دكتور المادة' : 'Professor') : (lang === 'ar' ? 'مسؤول المنصة' : 'Platform Moderator')}
                                 </div>
                             </div>
 
                             <!-- Role Seal: absolute bottom-right -->
-                            <div style=${{
-                                position: 'absolute', bottom: '44px', right: '64px', zIndex: 30,
-                                width: '110px', height: '110px', borderRadius: '50%',
-                                border: '4px solid ' + (isDoctor ? '#fde68a' : '#cbd5e1'),
-                                background: isDoctor ? 'linear-gradient(135deg,#fde68a,#f59e0b,#d97706)' : 'linear-gradient(135deg,#e2e8f0,#94a3b8,#64748b)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column',
-                                transform: 'rotate(-15deg)',
-                                boxShadow: '0 8px 30px rgba(0,0,0,0.18)'
-                            }}>
-                                <div style=${{
-                                    width: '94px', height: '94px', borderRadius: '50%',
-                                    border: '2px dashed ' + (isDoctor ? '#fef9c3' : '#e2e8f0'),
-                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
-                                }}>
-                                    <span style=${{ fontSize: '26px', lineHeight: 1 }}>🏅</span>
-                                    <span style=${{ fontSize: '9px', fontWeight: 900, marginTop: '5px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em', color: isDoctor ? '#fff' : '#1e293b', lineHeight: 1.3, whiteSpace: 'pre-line' }}>
-                                        ${isDoctor ? 'Official\nHonor' : 'Peer\nRecog.'}
+                            <div className="absolute bottom-[40px] right-[60px] z-30 w-28 h-28 rounded-full flex items-center justify-center flex-col -rotate-12 shadow-2xl"
+                                 style=${{
+                                    border: '4px solid ' + (isDoctor ? '#fde68a' : '#cbd5e1'),
+                                    background: isDoctor ? 'linear-gradient(135deg,#fde68a,#f59e0b,#d97706)' : 'linear-gradient(135deg,#e2e8f0,#94a3b8,#64748b)'
+                                 }}>
+                                <div className="w-24 h-24 rounded-full flex flex-col items-center justify-center"
+                                     style=${{ border: '2px dashed ' + (isDoctor ? '#fef9c3' : '#e2e8f0') }}>
+                                    <span className="text-3xl leading-none">🏅</span>
+                                    <span className="text-[10px] font-black mt-1 text-center uppercase" style=${{ color: isDoctor ? '#fff' : '#1e293b' }}>
+                                        ${isDoctor ? 'Official' : 'Peer'}
                                     </span>
                                 </div>
                             </div>
@@ -402,17 +396,13 @@
         if (selectedCert) {
             return html`
                 <div style=${{ animation: 'fadeIn 0.3s ease', paddingBottom: '80px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-                    <div style=${{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px', padding: '0 16px' }}>
+                    <div className="flex justify-start mb-6 w-full max-w-6xl mx-auto px-4 pt-6">
                         <button
                             onClick=${() => setSelectedCert(null)}
-                            className="whitespace-nowrap w-fit mx-auto sm:ml-0"
-                            style=${{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: '#fff', border: '1px solid #e2e8f0', color: '#475569', fontWeight: 800, padding: '12px 24px', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.07)', fontSize: '15px' }}>
-                            <span>${lang === 'ar' ? '→' : '←'}</span>
-                            ${lang === 'ar' ? 'رجوع للأرشيف' : 'Back to Archive'}
+                            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-lg font-bold">
+                            <span>←</span>
+                            <span>${lang === 'ar' ? 'رجوع للأرشيف' : 'Back to Archive'}</span>
                         </button>
-                        <h2 style=${{ fontSize: '22px', fontWeight: 900, color: '#1e293b', margin: 0 }}>
-                            🏆 ${lang === 'ar' ? (selectedCert.title || 'شهادة') : (selectedCert.titleEn || selectedCert.title || 'Certificate')}
-                        </h2>
                     </div>
                     <div style=${{ padding: '0 16px', width: '100%', display: 'flex', justifyContent: 'center' }}>
                         <${Luminova.Components.CertificateImage} 

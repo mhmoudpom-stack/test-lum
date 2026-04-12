@@ -220,7 +220,7 @@ Luminova.Components.TimelineFeed = ({ items, students, subjects, lang, onQuizCli
                             </div>
 
                             <!-- Showcase Side (Image) -->
-                            <div className="w-full md:w-5/12 max-w-lg">
+                            <div className="w-full md:max-w-md">
                                 <div className="bg-white/10 p-2 rounded-[24px] backdrop-blur-md border border-white/20 shadow-2xl rotate-1 hover:rotate-0 transition-transform duration-300">
                                     <${Luminova.Components.CertificateImage} 
                                         certificate=${latestCert} 
