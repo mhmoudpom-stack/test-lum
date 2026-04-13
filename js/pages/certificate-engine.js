@@ -20,30 +20,8 @@
     };
 
     // ----------------------------------------------------------------
-    // SVG QR Code Generator (deterministic hash-based pattern)
+    // SVG QR Code Generator (Deprecated in favor of qrcode.min.js)
     // ----------------------------------------------------------------
-    const generateQRCodeSVG = (url) => {
-        const hash = url.split('').reduce((acc, c) => (acc * 31 + c.charCodeAt(0)) % 1000000000, 0);
-        const dots = [];
-        for (let i = 0; i < 18; i++) {
-            for (let j = 0; j < 18; j++) {
-                if (i < 14 && j < 14) continue;
-                if (i > 24 && j < 14) continue;
-                if (i < 14 && j > 24) continue;
-                if (((hash >> ((i % 5) + (j % 5))) & 1) !== 1) continue;
-                dots.push(html`<rect key=${i + '-' + j} x=${j * 2 + 2} y=${i * 2 + 2} width="2" height="2" fill="#000" />`);
-            }
-        }
-        return html`
-            <svg viewBox="0 0 40 40" style=${{ width: '100%', height: '100%' }}>
-                <rect width="40" height="40" fill="#fff" />
-                <path d="M2 2 h10 v10 h-10 z M4 4 h6 v6 h-6 z" fill="#000" />
-                <path d="M28 2 h10 v10 h-10 z M30 4 h6 v6 h-6 z" fill="#000" />
-                <path d="M2 28 h10 v10 h-10 z M4 30 h6 v6 h-6 z" fill="#000" />
-                ${dots}
-            </svg>
-        `;
-    };
 
     // ----------------------------------------------------------------
     // Render-to-Image Certificate Engine (Task 2)
@@ -96,14 +74,14 @@
 
         return new Promise((resolve) => {
             const root = window.ReactDOM.createRoot(container);
-            root.render(
-                html`<${Luminova.Components.CertificateCard} certificate=${certificate} lang=${lang} />`
-            );
+            let snapShotted = false;
 
-            // Give React a moment to mount the DOM
-            setTimeout(async () => {
+            const executeSnapshot = async () => {
+                if (snapShotted) return;
+                snapShotted = true;
                 await document.fonts.ready;
-                await new Promise(r => setTimeout(r, 800)); // Safety margin for browser painting
+                // Tiny frame delay to ensure paint
+                await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
                 
                 const targetNode = container.querySelector('[id^="cert-"]') || container;
                 try {
@@ -127,7 +105,16 @@
                     root.unmount();
                     document.body.removeChild(container);
                 }
-            }, 100);
+            };
+
+            root.render(
+                html`<${Luminova.Components.CertificateCard} certificate=${certificate} lang=${lang} onReady=${executeSnapshot} />`
+            );
+
+            // Maximum fallback safety timeout (in case of rare QR script network failures)
+            setTimeout(() => {
+                if (!snapShotted) executeSnapshot();
+            }, 5000);
         });
     };
 
@@ -227,11 +214,46 @@
     // ================================================================
     // CertificateCard — rigid A4 landscape full document
     // ================================================================
-    Luminova.Components.CertificateCard = ({ certificate, lang }) => {
+    Luminova.Components.CertificateCard = ({ certificate, lang, onReady }) => {
+        const { useState, useEffect } = window.React;
+        const [qrDataUrl, setQrDataUrl] = useState(null);
         lang = lang || 'ar';
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set('verify', certificate.id);
-        const verifyUrl = currentUrl.toString();
+        
+        const currentBase = window.location.origin + window.location.pathname;
+        const cleanBase = currentBase.endsWith('/') ? currentBase.slice(0, -1) : currentBase;
+        const verifyUrl = cleanBase + "?verify=" + certificate.id;
+
+        useEffect(() => {
+            let mounted = true;
+
+            const loadAndGenerateQR = async () => {
+                try {
+                    let QRC = window.QRCode;
+                    if (!QRC) {
+                        await new Promise((resolve, reject) => {
+                            const script = document.createElement('script');
+                            script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+                            script.onload = () => resolve(window.QRCode);
+                            script.onerror = reject;
+                            document.head.appendChild(script);
+                        });
+                        QRC = window.QRCode;
+                    }
+                    const url = await QRC.toDataURL(verifyUrl, { margin: 1, width: 256, color: { dark: '#0f172a', light: '#ffffff' } });
+                    if (mounted) setQrDataUrl(url);
+                } catch(e) {
+                    console.error("QR Generation failed", e);
+                    if (onReady) onReady(); // Fallback if script drops
+                }
+            };
+            loadAndGenerateQR();
+            return () => { mounted = false; };
+        }, [certificate.id]);
+
+        useEffect(() => {
+            if (qrDataUrl && onReady) onReady();
+        }, [qrDataUrl]);
+
         const isDoctor  = certificate.senderRole === 'doctor';
 
         const studentName = lang === 'ar' ? certificate.studentName : (certificate.studentNameEn || certificate.studentName);
@@ -255,7 +277,7 @@
                     <div style=${{ width: '1000px', margin: '0 auto' }}>
                         <div
                             id=${'cert-' + certificate.id}
-                            className="relative w-full max-w-4xl mx-auto bg-gradient-to-br from-[#fffdfa] to-[#f4f1e6] p-2 shadow-2xl overflow-hidden aspect-[1.414]"
+                            className="relative w-full max-w-4xl mx-auto bg-gradient-to-br from-white to-slate-50 p-4 shadow-2xl overflow-hidden aspect-[1.414]"
                             style=${{
                                 width: '1000px',
                                 height: '707px',
@@ -263,8 +285,8 @@
                                 boxSizing: 'border-box'
                             }}>
 
-                            <!-- The Heavy Frame -->
-                            <div className="border-[12px] border-double border-slate-900 ring-4 ring-inset ring-yellow-600/80 p-8 h-full relative">
+                            <!-- The Modern Premium Frame -->
+                            <div className="border border-slate-300 shadow-inner p-10 h-full relative bg-transparent flex flex-col justify-center items-center">
 
                                 <!-- Watermark -->
                                 <div className="absolute inset-0 flex items-center justify-center opacity-5 scale-150 grayscale pointer-events-none z-0">
@@ -284,13 +306,13 @@
 
                                     <!-- Body -->
                                     <div className="flex flex-col items-center mt-[40px]">
-                                        <p className="text-xl font-bold text-slate-500 mb-6" style=${{ letterSpacing: 'normal' }}>
+                                        <p className="text-xl font-medium text-slate-700 mb-6" style=${{ letterSpacing: 'normal' }}>
                                             ${lang === 'ar' ? 'تشهد منصة لومينوفا التعليمية بأن' : 'Luminova Edu Platform certifies that'}
                                         </p>
                                         <div className="text-5xl font-black text-slate-900 mb-8 border-b-2 border-slate-200 pb-4" style=${{ letterSpacing: 'normal' }}>
                                             ${studentName}
                                         </div>
-                                        <p className="text-2xl font-bold text-slate-700 max-w-3xl leading-relaxed" style=${{ letterSpacing: 'normal' }}>
+                                        <p className="text-2xl font-medium text-slate-800 max-w-3xl leading-relaxed" style=${{ letterSpacing: 'normal' }}>
                                             ${certDesc}
                                         </p>
                                     </div>
@@ -299,8 +321,8 @@
 
                                 <!-- QR Code: absolute bottom-left -->
                                 <div className="absolute bottom-[20px] left-[40px] flex flex-col items-center z-30">
-                                    <div className="w-24 h-24 bg-white p-1.5 border-4 border-slate-900 shadow-lg">
-                                        ${generateQRCodeSVG(verifyUrl)}
+                                    <div className="w-24 h-24 bg-white p-1.5 border-4 border-slate-900 shadow-lg flex items-center justify-center">
+                                        ${qrDataUrl ? html`<img src=${qrDataUrl} alt="QR Code" className="w-full h-full object-contain" />` : ''}
                                     </div>
                                     <span className="text-xs font-black text-slate-500 mt-2 font-mono bg-white px-3 py-0.5 rounded-full border border-slate-200">
                                         ID: ${certificate.id}
@@ -309,10 +331,10 @@
 
                                 <!-- Signature: absolute bottom-center -->
                                 <div className="absolute bottom-[20px] left-1/2 -translate-x-1/2 flex flex-col items-center z-30">
-                                    <div className="text-2xl font-black text-slate-900 border-b-2 border-yellow-500 pb-2 px-8 mb-2 whitespace-nowrap" style=${{ letterSpacing: 'normal' }}>
+                                    <div className="text-2xl font-black text-slate-900 border-b-2 border-yellow-500 pb-2 px-8 mb-2 whitespace-nowrap">
                                         ${senderName}
                                     </div>
-                                    <div className="text-sm font-bold text-slate-500 uppercase whitespace-nowrap" style=${{ letterSpacing: 'normal' }}>
+                                    <div className="text-sm font-bold text-slate-500 uppercase whitespace-nowrap">
                                         ${isDoctor ? (lang === 'ar' ? 'دكتور المادة' : 'Professor') : (lang === 'ar' ? 'مسؤول المنصة' : 'Platform Moderator')}
                                     </div>
                                 </div>
