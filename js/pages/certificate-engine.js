@@ -215,44 +215,15 @@
     // CertificateCard — rigid A4 landscape full document
     // ================================================================
     Luminova.Components.CertificateCard = ({ certificate, lang, onReady }) => {
-        const { useState, useEffect } = window.React;
-        const [qrDataUrl, setQrDataUrl] = useState(null);
         lang = lang || 'ar';
         
         const currentBase = window.location.origin + window.location.pathname;
         const cleanBase = currentBase.endsWith('/') ? currentBase.slice(0, -1) : currentBase;
         const verifyUrl = cleanBase + "?verify=" + certificate.id;
 
-        useEffect(() => {
-            let mounted = true;
+        const qrImgSrc = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=1&data=" + encodeURIComponent(verifyUrl);
 
-            const loadAndGenerateQR = async () => {
-                try {
-                    let QRC = window.QRCode;
-                    if (!QRC) {
-                        await new Promise((resolve, reject) => {
-                            const script = document.createElement('script');
-                            script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
-                            script.onload = () => resolve(window.QRCode);
-                            script.onerror = reject;
-                            document.head.appendChild(script);
-                        });
-                        QRC = window.QRCode;
-                    }
-                    const url = await QRC.toDataURL(verifyUrl, { margin: 1, width: 256, color: { dark: '#0f172a', light: '#ffffff' } });
-                    if (mounted) setQrDataUrl(url);
-                } catch(e) {
-                    console.error("QR Generation failed", e);
-                    if (onReady) onReady(); // Fallback if script drops
-                }
-            };
-            loadAndGenerateQR();
-            return () => { mounted = false; };
-        }, [certificate.id]);
 
-        useEffect(() => {
-            if (qrDataUrl && onReady) onReady();
-        }, [qrDataUrl]);
 
         const isDoctor  = certificate.senderRole === 'doctor';
 
@@ -272,89 +243,101 @@
                     }
                 </style>
 
-                <!-- Scrollable container so card is always accessible on small screens -->
+                <!-- Scrollable wrapper -->
                 <div style=${{ width: '100%', overflowX: 'auto' }}>
                     <div style=${{ width: '1000px', margin: '0 auto' }}>
                         <div
                             id=${'cert-' + certificate.id}
-                            className="relative w-full max-w-4xl mx-auto bg-gradient-to-br from-white to-slate-50 p-4 shadow-2xl overflow-hidden aspect-[1.414]"
                             style=${{
+                                position: 'relative',
                                 width: '1000px',
                                 height: '707px',
                                 fontFamily: "'Cairo', serif",
-                                boxSizing: 'border-box'
+                                boxSizing: 'border-box',
+                                background: '#FCFAF8',
+                                boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+                                overflow: 'hidden'
                             }}>
 
-                            <!-- The Modern Premium Frame -->
-                            <div className="border border-slate-300 shadow-inner p-10 h-full relative bg-transparent flex flex-col justify-center items-center">
+                            <!-- LAYER 1: Heavy Navy Outer Border -->
+                            <div style=${{ position: 'absolute', inset: '0', border: '16px solid #0f172a', boxSizing: 'border-box', pointerEvents: 'none', zIndex: 5 }}></div>
 
-                                <!-- Watermark -->
-                                <div className="absolute inset-0 flex items-center justify-center opacity-5 scale-150 grayscale pointer-events-none z-0">
-                                    <span style=${{ fontSize: '180px', fontWeight: 900, transform: 'rotate(-15deg)', whiteSpace: 'nowrap', letterSpacing: 'normal' }}>LUMINOVA</span>
+                            <!-- LAYER 2: White Middle Space -->
+                            <div style=${{ position: 'absolute', inset: '16px', border: '8px solid #ffffff', boxSizing: 'border-box', pointerEvents: 'none', zIndex: 5 }}></div>
+
+                            <!-- LAYER 3: Gold Inner Ring -->
+                            <div style=${{ position: 'absolute', inset: '24px', border: '3px solid #B8860B', boxSizing: 'border-box', pointerEvents: 'none', zIndex: 6 }}></div>
+
+                            <!-- LAYER 3: Centered Watermark (text, no external image load) -->
+                            <div style=${{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '120px', fontWeight: 900, color: '#000', opacity: 0.025, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 1, userSelect: 'none' }}>
+                                LUMINOVA
+                            </div>
+
+                            <!-- LAYER 4: Main Content Zone (Top Anchored Flex Column) -->
+                            <div style=${{ position: 'absolute', inset: '38px', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '16px', textAlign: 'center' }}>
+
+                                <!-- Platform Label + Title -->
+                                <div style=${{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', marginBottom: '16px' }}>
+                                    <div style=${{ fontSize: '12px', fontWeight: 900, color: '#B8860B', letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '8px' }}>LUMINOVA EDU</div>
+                                    <div style=${{ fontSize: '48px', fontWeight: 900, color: '#0f172a', letterSpacing: 'normal' }}>
+                                        ${certTitle}
+                                    </div>
+                                    <div style=${{ color: '#ca8a04', fontSize: '24px', margin: '16px 0' }}>✦ ✦ ✦</div>
                                 </div>
 
-                                <!-- Content -->
-                                <div className="relative z-20 flex flex-col items-center justify-center text-center w-full h-full px-12">
-
-                                    <!-- Header -->
-                                    <div className="absolute top-[20px] flex flex-col items-center w-full">
-                                        <div style=${{ fontSize: '13px', fontWeight: 900, color: '#b8860b', textTransform: 'uppercase', letterSpacing: 'normal' }}>✦ LUMINOVA EDU ✦</div>
-                                        <div className="text-4xl font-black text-slate-900 mt-4 border-b-4 border-yellow-500 pb-2 inline-block" style=${{ letterSpacing: 'normal' }}>
-                                            ${certTitle}
-                                        </div>
+                                <!-- Certification Body -->
+                                <div style=${{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <p style=${{ fontSize: '20px', fontWeight: 500, color: '#475569', marginBottom: '16px', letterSpacing: 'normal' }}>
+                                        ${lang === 'ar' ? 'تشهد منصة لومينوفا التعليمية بأن' : 'Luminova Edu Platform certifies that'}
+                                    </p>
+                                    <div style=${{ fontSize: '64px', fontWeight: 900, color: '#92660a', marginBottom: '24px', letterSpacing: 'normal', textShadow: '0 2px 2px rgba(0,0,0,0.05)' }}>
+                                        ${studentName}
                                     </div>
-
-                                    <!-- Body -->
-                                    <div className="flex flex-col items-center mt-[40px]">
-                                        <p className="text-xl font-medium text-slate-700 mb-6" style=${{ letterSpacing: 'normal' }}>
-                                            ${lang === 'ar' ? 'تشهد منصة لومينوفا التعليمية بأن' : 'Luminova Edu Platform certifies that'}
-                                        </p>
-                                        <div className="text-5xl font-black text-slate-900 mb-8 border-b-2 border-slate-200 pb-4" style=${{ letterSpacing: 'normal' }}>
-                                            ${studentName}
-                                        </div>
-                                        <p className="text-2xl font-medium text-slate-800 max-w-3xl leading-relaxed" style=${{ letterSpacing: 'normal' }}>
-                                            ${certDesc}
-                                        </p>
-                                    </div>
-
-                                </div>
-
-                                <!-- QR Code: absolute bottom-left -->
-                                <div className="absolute bottom-[20px] left-[40px] flex flex-col items-center z-30">
-                                    <div className="w-24 h-24 bg-white p-1.5 border-4 border-slate-900 shadow-lg flex items-center justify-center">
-                                        ${qrDataUrl ? html`<img src=${qrDataUrl} alt="QR Code" className="w-full h-full object-contain" />` : ''}
-                                    </div>
-                                    <span className="text-xs font-black text-slate-500 mt-2 font-mono bg-white px-3 py-0.5 rounded-full border border-slate-200">
-                                        ID: ${certificate.id}
-                                    </span>
-                                </div>
-
-                                <!-- Signature: absolute bottom-center -->
-                                <div className="absolute bottom-[20px] left-1/2 -translate-x-1/2 flex flex-col items-center z-30">
-                                    <div className="text-2xl font-black text-slate-900 border-b-2 border-yellow-500 pb-2 px-8 mb-2 whitespace-nowrap">
-                                        ${senderName}
-                                    </div>
-                                    <div className="text-sm font-bold text-slate-500 uppercase whitespace-nowrap">
-                                        ${isDoctor ? (lang === 'ar' ? 'دكتور المادة' : 'Professor') : (lang === 'ar' ? 'مسؤول المنصة' : 'Platform Moderator')}
-                                    </div>
-                                </div>
-
-                                <!-- Role Seal: absolute bottom-right -->
-                                <div className="absolute bottom-[20px] right-[40px] z-30 w-28 h-28 rounded-full flex items-center justify-center flex-col -rotate-12 shadow-2xl"
-                                     style=${{
-                                        border: '4px solid ' + (isDoctor ? '#fde68a' : '#cbd5e1'),
-                                        background: isDoctor ? 'linear-gradient(135deg,#fde68a,#f59e0b,#d97706)' : 'linear-gradient(135deg,#e2e8f0,#94a3b8,#64748b)'
-                                     }}>
-                                    <div className="w-24 h-24 rounded-full flex flex-col items-center justify-center"
-                                         style=${{ border: '2px dashed ' + (isDoctor ? '#fef9c3' : '#e2e8f0') }}>
-                                        <span className="text-3xl leading-none">🏅</span>
-                                        <span className="text-[10px] font-black mt-1 text-center uppercase" style=${{ color: isDoctor ? '#fff' : '#1e293b', letterSpacing: 'normal' }}>
-                                            ${isDoctor ? 'Official' : 'Peer'}
-                                        </span>
-                                    </div>
+                                    <p style=${{ fontSize: '28px', fontWeight: 500, color: '#1e293b', maxWidth: '720px', lineHeight: 1.8, letterSpacing: 'normal' }}>
+                                        ${certDesc}
+                                    </p>
                                 </div>
 
                             </div>
+
+                            <!-- LAYER 5: Footer Elements (Absolute Positioned inside Gold Ring) -->
+                            
+                            <!-- QR Code (bottom-left) -->
+                            <div style=${{ position: 'absolute', bottom: '40px', left: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 20 }}>
+                                <div style=${{ width: '88px', height: '88px', background: '#fff', padding: '4px', border: '4px solid #0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <img crossOrigin="anonymous" src=${qrImgSrc} alt="QR Code" onLoad=${onReady} onError=${onReady} style=${{ width: '100%', height: '100%', display: 'block' }} />
+                                </div>
+                                <span style=${{ fontSize: '10px', fontWeight: 700, color: '#64748b', marginTop: '6px', fontFamily: 'monospace' }}>
+                                    ID: ${certificate.id}
+                                </span>
+                            </div>
+
+                            <!-- Role Seal (bottom-right) -->
+                            <div style=${{
+                                position: 'absolute', bottom: '40px', right: '40px', zIndex: 20,
+                                width: '88px', height: '88px', borderRadius: '50%',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                transform: 'rotate(-12deg)',
+                                border: '4px solid ' + (isDoctor ? '#fde68a' : '#cbd5e1'),
+                                background: isDoctor ? 'linear-gradient(135deg,#fde68a,#f59e0b,#d97706)' : 'linear-gradient(135deg,#e2e8f0,#94a3b8,#64748b)',
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.18)'
+                            }}>
+                                <span style=${{ fontSize: '28px', lineHeight: 1 }}>🏅</span>
+                                <span style=${{ fontSize: '9px', fontWeight: 900, marginTop: '3px', textAlign: 'center', textTransform: 'uppercase', color: isDoctor ? '#fff' : '#1e293b', letterSpacing: 'normal' }}>
+                                    ${isDoctor ? 'Official' : 'Peer'}
+                                </span>
+                            </div>
+
+                            <!-- Signature (bottom-center) -->
+                            <div style=${{ position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', zIndex: 20 }}>
+                                <p style=${{ fontSize: '26px', fontWeight: 900, color: '#0f172a', borderBottom: '2px solid #eab308', paddingBottom: '6px', paddingLeft: '24px', paddingRight: '24px', marginBottom: '8px', whiteSpace: 'nowrap', letterSpacing: 'normal' }}>
+                                    ${senderName}
+                                </p>
+                                <div style=${{ fontSize: '12px', fontWeight: 500, color: '#94a3b8', direction: 'rtl' }}>
+                                    ${isDoctor ? (lang === 'ar' ? 'دكتور المادة' : 'Professor') : (lang === 'ar' ? 'مسؤول المنصة' : 'Platform Moderator')}
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -377,6 +360,8 @@
             </div>
         `;
     };
+
+
 
     // ================================================================
     // CertificateArchivePage — Master-Detail pattern + Pagination
